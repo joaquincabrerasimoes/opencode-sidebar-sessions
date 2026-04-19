@@ -144,12 +144,21 @@ export function createSidebarSessionsPlugin({ client }) {
   }
 
   let abort = false
+  let abortController
   const start = async () => {
-    const streamResult = await client.event.subscribe()
-    for await (const chunk of streamResult.stream) {
-      if (abort) break
-      const payload = chunk?.data?.payload ?? chunk?.payload ?? chunk
-      await handleEvent(payload)
+    abort = false
+    abortController = new AbortController()
+    try {
+      const streamResult = await client.event.subscribe(undefined, { signal: abortController.signal })
+      for await (const chunk of streamResult.stream) {
+        if (abort) break
+        const payload = chunk?.data?.payload ?? chunk?.payload ?? chunk
+        await handleEvent(payload)
+      }
+    } catch (error) {
+      if (!abort) throw error
+    } finally {
+      abortController = undefined
     }
   }
 
@@ -157,6 +166,7 @@ export function createSidebarSessionsPlugin({ client }) {
     start,
     stop() {
       abort = true
+      abortController?.abort()
     },
     handleEvent,
     selectSession,

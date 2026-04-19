@@ -70,3 +70,23 @@ test("updates and removes tracked sessions from lifecycle events", async () => {
   assert.equal(state.currentSessionID, undefined)
   assert.deepEqual(state.currentSessionSubAgents, [])
 })
+
+test("start() consumes stream events and updates current session state", async () => {
+  const events = [{ data: { payload: { type: "tui.session.select", properties: { sessionID: "s1" } } } }]
+  const client = createClientMock()
+  client.event.subscribe = async () => ({
+    stream: (async function* () {
+      for (const event of events) yield event
+    })(),
+  })
+  const plugin = createSidebarSessionsPlugin({ client })
+
+  await plugin.start()
+
+  const state = plugin.getState()
+  assert.equal(state.currentSessionID, "s1")
+  assert.deepEqual(
+    state.currentSessionSubAgents.map((session) => session.id),
+    ["a1"],
+  )
+})
