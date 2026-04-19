@@ -149,7 +149,7 @@ export function createSidebarSessionsPlugin({ client }) {
     abort = false
     abortController = new AbortController()
     try {
-      const streamResult = await client.event.subscribe(undefined, { signal: abortController.signal })
+      const streamResult = await client.event.subscribe({}, { signal: abortController.signal })
       for await (const chunk of streamResult.stream) {
         if (abort) break
         const payload = chunk?.data?.payload ?? chunk?.payload ?? chunk
