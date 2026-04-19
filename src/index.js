@@ -156,7 +156,9 @@ export function createSidebarSessionsPlugin({ client }) {
         await handleEvent(payload)
       }
     } catch (error) {
-      if (!abort) throw error
+      if (!abort) {
+        throw new Error("Failed to subscribe to OpenCode events", { cause: error })
+      }
     } finally {
       abortController = undefined
     }

@@ -90,3 +90,31 @@ test("start() consumes stream events and updates current session state", async (
     ["a1"],
   )
 })
+
+test("stop() aborts event stream consumption", async () => {
+  const client = createClientMock()
+  client.event.subscribe = async (_params, options = {}) => ({
+    stream: (async function* () {
+      while (true) {
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(resolve, 50)
+          options.signal?.addEventListener(
+            "abort",
+            () => {
+              clearTimeout(timeout)
+              reject(new Error("aborted"))
+            },
+            { once: true },
+          )
+        })
+        yield { data: { payload: { type: "noop" } } }
+      }
+    })(),
+  })
+
+  const plugin = createSidebarSessionsPlugin({ client })
+  const started = plugin.start()
+  await new Promise((resolve) => setTimeout(resolve, 10))
+  plugin.stop()
+  await assert.doesNotReject(started)
+})
