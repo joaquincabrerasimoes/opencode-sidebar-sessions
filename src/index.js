@@ -49,7 +49,7 @@ function unwrap(result) {
  *       children(params: { sessionID: string }): Promise<unknown>
  *     }
  *     event: {
- *       subscribe(): Promise<{ stream: AsyncGenerator<any, any, any> }>
+ *       subscribe(): Promise<{ stream: AsyncGenerator<unknown, void, unknown> }>
  *     }
  *   }
  * }} input
