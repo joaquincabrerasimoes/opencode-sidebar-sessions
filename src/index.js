@@ -143,31 +143,29 @@ export function createSidebarSessionsPlugin({ client }) {
     }
   }
 
-  let abort = false
   let abortController
   const start = async () => {
-    abort = false
-    abortController = new AbortController()
+    const controller = new AbortController()
+    abortController = controller
     try {
-      const streamResult = await client.event.subscribe({}, { signal: abortController.signal })
+      const streamResult = await client.event.subscribe({}, { signal: controller.signal })
       for await (const chunk of streamResult.stream) {
-        if (abort) break
+        if (controller.signal.aborted) break
         const payload = chunk?.data?.payload ?? chunk?.payload ?? chunk
         await handleEvent(payload)
       }
     } catch (error) {
-      if (!abort) {
+      if (!controller.signal.aborted && error?.name !== "AbortError" && error?.message !== "aborted") {
         throw new Error("Failed to subscribe to OpenCode events", { cause: error })
       }
     } finally {
-      abortController = undefined
+      if (abortController === controller) abortController = undefined
     }
   }
 
   return {
     start,
     stop() {
-      abort = true
       abortController?.abort()
     },
     handleEvent,
